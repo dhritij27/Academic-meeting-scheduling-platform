@@ -198,7 +198,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Authors
 
-- **Your Name** - *Initial work* - [YourGitHub](https://github.com/yourusername)
+- **Dhriti Harish Jamadagni**  - [YourGitHub](https://github.com/dhritij27)
 
 ## Acknowledgments
 
@@ -206,15 +206,12 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Inspiration from university scheduling systems
 - Community feedback and contributions
 
-## Support
-
-For support, email support@yourdomain.com or open an issue on GitHub.
 
 ## Project Status
 
 **Current Version**: 1.0.0  
 **Status**: Active Development  
-**Last Updated**: October 2025
+**Last Updated**: November 2025
 
 ---
 
