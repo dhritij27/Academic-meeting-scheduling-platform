@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Meeting Scheduler</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>
+                <i data-lucide="calendar"></i>
+                Academic Meeting Scheduler
+            </h1>
+            <div class="user-info">
+                <div class="user-badge" id="userBadge">Meera Iyer (Student)</div>
+                <button class="btn btn-secondary logout-btn" onclick="logout()">
+                    <i data-lucide="log-out"></i>
+                    Logout
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Sidebar -->
+            <div class="sidebar">
+                <!-- Stats -->
+                <div class="card">
+                    <h2><i data-lucide="bar-chart-3"></i> Overview</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="upcomingCount">0</div>
+                            <div class="stat-label">Upcoming</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="completedCount">0</div>
+                            <div class="stat-label">Completed</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Availability -->
+                <div class="card">
+                    <h2><i data-lucide="clock"></i> My Availability</h2>
+                    <div class="availability-grid" id="availabilityGrid">
+                        <!-- Availability slots will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Content -->
+            <div class="content">
+                <!-- Tabs -->
+                <div class="card">
+                    <div class="tabs">
+                        <button class="tab active" onclick="switchTab('upcoming')">Upcoming Meetings</button>
+                        <button class="tab" onclick="switchTab('book')" id="bookTabBtn">Book Meeting</button>
+                        <button class="tab" onclick="switchTab('fams')" id="famsTabBtn">FAMs</button>
+                        <button class="tab" onclick="switchTab('notes')" id="notesTabBtn" style="display: none;">Meeting Notes</button>
+                    </div>
+
+                    <!-- Upcoming Meetings Tab -->
+                    <div id="upcomingTab" class="tab-content">
+                        <div class="meeting-list" id="meetingList">
+                            <!-- Meetings will be rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- Book Meeting Tab -->
+                    <div id="bookTab" class="tab-content" style="display: none;">
+                        <form id="meetingForm">
+                            <div class="form-group">
+                                <label for="meetingType">Meeting Type</label>
+                                <select id="meetingType" required>
+                                    <option value="">Select meeting type</option>
+                                    <option value="Student-Professor">Student-Professor</option>
+                                    <option value="Student-FAM">Student-FAM</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="meetingWith">With</label>
+                                <select id="meetingWith" required>
+                                    <option value="">Select person</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="meetingDate">Date</label>
+                                <input type="date" id="meetingDate" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Available Time Slots</label>
+                                <div class="time-slots" id="timeSlots">
+                                    <!-- Time slots will be rendered here -->
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="meetingPurpose">Purpose</label>
+                                <textarea id="meetingPurpose" rows="3" placeholder="Brief description of meeting purpose..." required></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i data-lucide="calendar-plus"></i>
+                                Book Meeting
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- FAMs Tab -->
+                    <div id="famsTab" class="tab-content" style="display: none;">
+                        <div id="famsList">
+                            <!-- FAMs will be rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- Meeting Notes Tab (for FAMs) -->
+                    <div id="notesTab" class="tab-content" style="display: none;">
+                        <h3 style="margin-bottom: 20px;">Meeting Notes</h3>
+                        <div id="meetingNotesList">
+                            <!-- Meeting notes will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Meeting Details Modal -->
+    <div id="meetingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Meeting Details</h3>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="meetingDetails">
+                <!-- Meeting details will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="utility.js"></script>
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

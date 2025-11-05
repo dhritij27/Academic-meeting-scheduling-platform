@@ -8,9 +8,45 @@ let currentTab = 'upcoming';
 let selectedTimeSlot = null;
 
 /**
+ * Authentication helper functions
+ */
+function isAuthenticated() {
+    return localStorage.getItem('isLoggedIn') === 'true';
+}
+
+function redirectToLogin() {
+    window.location.href = 'login.html';
+}
+
+function loadUserFromStorage() {
+    const userData = localStorage.getItem('currentUser');
+    if (userData) {
+        const user = JSON.parse(userData);
+        // Update the global data object with the logged-in user
+        data.currentUser = user;
+    }
+}
+
+function logout() {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('userRole');
+    redirectToLogin();
+}
+
+/**
  * Initialize the application
  */
 document.addEventListener('DOMContentLoaded', function() {
+    // Check authentication
+    if (!isAuthenticated()) {
+        redirectToLogin();
+        return;
+    }
+    
+    // Load user data from localStorage
+    loadUserFromStorage();
+    
     init();
     setupEventListeners();
 });
@@ -19,13 +55,50 @@ document.addEventListener('DOMContentLoaded', function() {
  * Main initialization function
  */
 function init() {
+    const user = getCurrentUser();
+    const role = user.role;
+    
+    // Show/hide tabs based on role
+    setupRoleBasedTabs(role);
+    
     renderMeetings();
     renderAvailability();
+    if (role === 'student') {
     renderFAMs();
+    }
+    if (role === 'fam') {
+        renderMeetingNotes();
+    }
     updateStats();
     setMinDate();
     updateRoleDisplay();
     lucide.createIcons();
+}
+
+/**
+ * Setup tabs based on user role
+ */
+function setupRoleBasedTabs(role) {
+    const bookTabBtn = document.getElementById('bookTabBtn');
+    const famsTabBtn = document.getElementById('famsTabBtn');
+    const notesTabBtn = document.getElementById('notesTabBtn');
+    
+    if (role === 'student') {
+        // Students can book meetings and see FAMs
+        bookTabBtn.style.display = 'block';
+        famsTabBtn.style.display = 'block';
+        notesTabBtn.style.display = 'none';
+    } else if (role === 'professor') {
+        // Professors can only see meetings
+        bookTabBtn.style.display = 'none';
+        famsTabBtn.style.display = 'none';
+        notesTabBtn.style.display = 'none';
+    } else if (role === 'fam') {
+        // FAMs can see meetings and add notes
+        bookTabBtn.style.display = 'none';
+        famsTabBtn.style.display = 'none';
+        notesTabBtn.style.display = 'block';
+    }
 }
 
 /**
@@ -83,7 +156,7 @@ function renderMeetings() {
         `;
     } else {
         meetingList.innerHTML = upcoming.map(meeting => `
-            <div class="meeting-item ${meeting.category === 'Student-FAM' ? 'fam' : meeting.category === 'Peer-to-Peer' ? 'peer' : ''}" 
+            <div class="meeting-item ${meeting.category === 'Student-FAM' ? 'fam' : ''}" 
                  onclick="showMeetingDetails(${meeting.id})">
                 <div class="meeting-header">
                     <div class="meeting-title">${meeting.with}</div>
@@ -143,10 +216,6 @@ function renderFAMs() {
                         <div class="fam-name">${fam.name}</div>
                         <div class="fam-specialization">${fam.specialization}</div>
                     </div>
-                    <div class="rating">
-                        <i data-lucide="star" style="width: 14px; height: 14px; fill: white;"></i>
-                        ${fam.rating.toFixed(2)}
-                    </div>
                 </div>
                 <div class="fam-bio">${fam.bio}</div>
                 <div class="fam-footer">
@@ -159,6 +228,127 @@ function renderFAMs() {
         `).join('');
     }
     lucide.createIcons();
+}
+
+/**
+ * Render meeting notes for FAMs
+ */
+function renderMeetingNotes() {
+    const notesList = document.getElementById('meetingNotesList');
+    const user = getCurrentUser();
+    
+    // Get all meetings where this FAM is involved
+    const allMeetings = getMeetings('all');
+    const famMeetings = allMeetings.filter(m => {
+        if (m.category !== 'Student-FAM') return false;
+        // Check if the FAM's name matches the meeting "with" field
+        return m.with && m.with.toLowerCase().includes(user.name.toLowerCase());
+    });
+    
+    if (famMeetings.length === 0) {
+        notesList.innerHTML = `
+            <div class="empty-state">
+                <i data-lucide="file-text"></i>
+                <p>No meetings found. Meeting notes will appear here once you have meetings with students.</p>
+            </div>
+        `;
+    } else {
+        notesList.innerHTML = famMeetings.map(meeting => {
+            const meetingNotes = getMeetingNotes(meeting.id) || '';
+            return `
+                <div class="meeting-notes-card">
+                    <div class="meeting-notes-header">
+                        <div>
+                            <div class="meeting-notes-title">Meeting with ${meeting.with}</div>
+                            <div class="meeting-notes-date">${formatDate(meeting.date)} at ${formatTime(meeting.startTime)}</div>
+                        </div>
+                        <button class="btn btn-primary" onclick="openNotesModal(${meeting.id})">
+                            <i data-lucide="edit"></i>
+                            ${meetingNotes ? 'Edit Notes' : 'Add Notes'}
+                        </button>
+                    </div>
+                    ${meetingNotes ? `
+                        <div class="meeting-notes-content">
+                            <strong>Notes:</strong>
+                            <p>${meetingNotes}</p>
+                        </div>
+                    ` : '<p style="color: var(--text-lighter); font-style: italic;">No notes added yet</p>'}
+                </div>
+            `;
+        }).join('');
+    }
+    lucide.createIcons();
+}
+
+/**
+ * Get meeting notes from storage
+ */
+function getMeetingNotes(meetingId) {
+    const notes = JSON.parse(localStorage.getItem('meetingNotes') || '{}');
+    return notes[meetingId] || '';
+}
+
+/**
+ * Save meeting notes to storage
+ */
+function saveMeetingNotes(meetingId, notes) {
+    const allNotes = JSON.parse(localStorage.getItem('meetingNotes') || '{}');
+    allNotes[meetingId] = notes;
+    localStorage.setItem('meetingNotes', JSON.stringify(allNotes));
+}
+
+/**
+ * Open notes modal for a meeting
+ */
+function openNotesModal(meetingId) {
+    const meeting = getMeetingById(meetingId);
+    if (!meeting) return;
+    
+    const existingNotes = getMeetingNotes(meetingId);
+    
+    const modal = document.getElementById('meetingModal');
+    const details = document.getElementById('meetingDetails');
+    
+    details.innerHTML = `
+        <div class="meeting-detail-item">
+            <strong>Meeting with:</strong> ${meeting.with}
+        </div>
+        <div class="meeting-detail-item">
+            <strong>Date:</strong> ${formatDate(meeting.date)}
+        </div>
+        <div class="meeting-detail-item">
+            <strong>Time:</strong> ${formatTime(meeting.startTime)} - ${formatTime(meeting.endTime)}
+        </div>
+        <div class="meeting-detail-item">
+            <strong>Purpose:</strong> ${meeting.purpose}
+        </div>
+        <div class="form-group" style="margin-top: 20px;">
+            <label for="meetingNotesText">Meeting Notes</label>
+            <textarea id="meetingNotesText" rows="8" placeholder="Enter meeting notes here...">${existingNotes}</textarea>
+            <small class="form-hint">Document important points discussed, student progress, and any follow-up actions needed.</small>
+        </div>
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <button class="btn btn-primary" onclick="saveNotes(${meetingId})">
+                <i data-lucide="save"></i>
+                Save Notes
+            </button>
+            <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+        </div>
+    `;
+    
+    modal.classList.add('active');
+    lucide.createIcons();
+}
+
+/**
+ * Save notes for a meeting
+ */
+function saveNotes(meetingId) {
+    const notes = document.getElementById('meetingNotesText').value.trim();
+    saveMeetingNotes(meetingId, notes);
+    showNotification('Meeting notes saved successfully!', 'success');
+    renderMeetingNotes();
+    closeModal();
 }
 
 /**
@@ -185,6 +375,9 @@ function switchTab(tabName) {
         document.getElementById('bookTab').style.display = 'block';
     } else if (tabName === 'fams') {
         document.getElementById('famsTab').style.display = 'block';
+    } else if (tabName === 'notes') {
+        document.getElementById('notesTab').style.display = 'block';
+        renderMeetingNotes();
     }
 }
 
@@ -204,4 +397,263 @@ function switchRole(role) {
     updateRoleDisplay();
     
     // Show/hide FAM tab based on role
-    const famsTab
+    const famsTabBtn = document.getElementById('famsTabBtn');
+    if (role === 'student') {
+        famsTabBtn.style.display = 'block';
+    } else {
+        famsTabBtn.style.display = 'none';
+    }
+    
+    // Refresh content based on new role
+    renderMeetings();
+    renderAvailability();
+    renderFAMs();
+}
+
+/**
+ * Update role display in header
+ */
+function updateRoleDisplay() {
+    const user = getCurrentUser();
+    const badge = document.getElementById('userBadge');
+    badge.textContent = `${user.name} (${capitalizeWords(user.role)})`;
+}
+
+/**
+ * Select time slot for booking
+ */
+function selectTimeSlot(element) {
+    // Remove previous selection
+    document.querySelectorAll('.time-slot').forEach(slot => {
+        slot.classList.remove('selected');
+    });
+    
+    // Add selection to clicked slot
+    element.classList.add('selected');
+    selectedTimeSlot = element.dataset.time;
+}
+
+/**
+ * Show meeting details in modal
+ */
+function showMeetingDetails(meetingId) {
+    const meeting = getMeetingById(meetingId);
+    if (!meeting) return;
+    
+    const user = getCurrentUser();
+    const isFAM = user.role === 'fam';
+    const isFAMMeeting = meeting.category === 'Student-FAM';
+    const existingNotes = isFAM ? getMeetingNotes(meetingId) : '';
+    
+    const modal = document.getElementById('meetingModal');
+    const details = document.getElementById('meetingDetails');
+    
+    details.innerHTML = `
+        <div class="meeting-detail-item">
+            <strong>With:</strong> ${meeting.with}
+        </div>
+        <div class="meeting-detail-item">
+            <strong>Date:</strong> ${formatDate(meeting.date)}
+        </div>
+        <div class="meeting-detail-item">
+            <strong>Time:</strong> ${formatTime(meeting.startTime)} - ${formatTime(meeting.endTime)}
+        </div>
+        <div class="meeting-detail-item">
+            <strong>Type:</strong> ${meeting.type}
+        </div>
+        <div class="meeting-detail-item">
+            <strong>Purpose:</strong> ${meeting.purpose}
+        </div>
+        ${meeting.location ? `<div class="meeting-detail-item"><strong>Location:</strong> ${meeting.location}</div>` : ''}
+        ${meeting.link ? `<div class="meeting-detail-item"><strong>Meeting Link:</strong> <a href="${meeting.link}" target="_blank">${meeting.link}</a></div>` : ''}
+        ${meeting.feedback ? `<div class="meeting-detail-item"><strong>Feedback:</strong> ${meeting.feedback}</div>` : ''}
+        ${isFAM && isFAMMeeting && existingNotes ? `
+            <div class="meeting-detail-item" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                <strong>Meeting Notes:</strong>
+                <p style="margin-top: 10px; white-space: pre-wrap;">${existingNotes}</p>
+            </div>
+        ` : ''}
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+            ${isFAM && isFAMMeeting ? `<button class="btn btn-primary" onclick="openNotesModal(${meeting.id})">
+                <i data-lucide="edit"></i>
+                ${existingNotes ? 'Edit Notes' : 'Add Notes'}
+            </button>` : ''}
+            ${meeting.status === 'Scheduled' && !isFAM ? `<button class="btn btn-primary" onclick="handleCancelMeeting(${meeting.id})">Cancel Meeting</button>` : ''}
+        </div>
+    `;
+    
+    modal.classList.add('active');
+    lucide.createIcons();
+}
+
+/**
+ * Close modal
+ */
+function closeModal() {
+    document.getElementById('meetingModal').classList.remove('active');
+}
+
+/**
+ * Book meeting with FAM
+ */
+function bookWithFAM(famId) {
+    const fam = getFAMById(famId);
+    if (!fam) return;
+    
+    // Switch to book tab and pre-fill FAM selection
+    switchTab('book');
+    
+    // Pre-select FAM meeting type and person
+    document.getElementById('meetingType').value = 'Student-FAM';
+    populateMeetingWithOptions();
+    document.getElementById('meetingWith').value = famId;
+    
+    // Scroll to form
+    document.getElementById('bookTab').scrollIntoView({ behavior: 'smooth' });
+}
+
+/**
+ * Cancel meeting
+ */
+function handleCancelMeeting(meetingId) {
+    if (confirmAction('Are you sure you want to cancel this meeting?')) {
+        const success = cancelMeeting(meetingId);
+        if (success) {
+            showNotification('Meeting cancelled successfully', 'success');
+            renderMeetings();
+            updateStats();
+            closeModal();
+        } else {
+            showNotification('Failed to cancel meeting', 'error');
+        }
+    }
+}
+
+/**
+ * Handle meeting form submission
+ */
+function handleMeetingFormSubmit(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const meetingData = {
+        category: document.getElementById('meetingType').value,
+        with: document.getElementById('meetingWith').selectedOptions[0].text,
+        date: document.getElementById('meetingDate').value,
+        startTime: selectedTimeSlot,
+        endTime: getEndTime(selectedTimeSlot),
+        type: 'Online', // Default to online for now
+        purpose: document.getElementById('meetingPurpose').value,
+        link: 'https://meet.google.com/meet-' + Math.random().toString(36).substring(7)
+    };
+    
+    if (!selectedTimeSlot) {
+        showNotification('Please select a time slot', 'error');
+        return;
+    }
+    
+    const newMeeting = addMeeting(meetingData);
+    if (newMeeting) {
+        showNotification('Meeting booked successfully!', 'success');
+        renderMeetings();
+        updateStats();
+        resetMeetingForm();
+    } else {
+        showNotification('Failed to book meeting', 'error');
+    }
+}
+
+/**
+ * Reset meeting form
+ */
+function resetMeetingForm() {
+    document.getElementById('meetingForm').reset();
+    selectedTimeSlot = null;
+    document.querySelectorAll('.time-slot').forEach(slot => {
+        slot.classList.remove('selected');
+    });
+    setMinDate();
+}
+
+/**
+ * Get end time (30 minutes after start)
+ */
+function getEndTime(startTime) {
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const totalMinutes = hours * 60 + minutes + 30;
+    const endHours = Math.floor(totalMinutes / 60);
+    const endMinutes = totalMinutes % 60;
+    return `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+}
+
+/**
+ * Populate meeting "with" options based on meeting type
+ */
+function populateMeetingWithOptions() {
+    const meetingType = document.getElementById('meetingType').value;
+    const meetingWithSelect = document.getElementById('meetingWith');
+    
+    meetingWithSelect.innerHTML = '<option value="">Select person</option>';
+    
+    if (meetingType === 'Student-Professor') {
+        const professors = getProfessors();
+        professors.forEach(prof => {
+            const option = document.createElement('option');
+            option.value = prof.id;
+            option.textContent = prof.name;
+            meetingWithSelect.appendChild(option);
+        });
+    } else if (meetingType === 'Student-FAM') {
+        const fams = getAvailableFAMs();
+        fams.forEach(fam => {
+            const option = document.createElement('option');
+            option.value = fam.id;
+            option.textContent = fam.name;
+            meetingWithSelect.appendChild(option);
+        });
+    
+    // Generate time slots for the selected date
+    generateTimeSlotsForDate();
+}
+
+/**
+ * Generate time slots for selected date
+ */
+function generateTimeSlotsForDate() {
+    const timeSlotsContainer = document.getElementById('timeSlots');
+    const availability = getAvailability();
+    
+    // For simplicity, generate common time slots
+    const commonSlots = [
+        '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+        '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'
+    ];
+    
+    timeSlotsContainer.innerHTML = commonSlots.map(time => `
+        <div class="time-slot" data-time="${time}">
+            ${formatTime(time)}
+        </div>
+    `).join('');
+}
+
+// Add event listeners when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Meeting form submission
+    const meetingForm = document.getElementById('meetingForm');
+    if (meetingForm) {
+        meetingForm.addEventListener('submit', handleMeetingFormSubmit);
+    }
+    
+    // Meeting type change
+    const meetingTypeSelect = document.getElementById('meetingType');
+    if (meetingTypeSelect) {
+        meetingTypeSelect.addEventListener('change', populateMeetingWithOptions);
+    }
+    
+    // Meeting date change
+    const meetingDateInput = document.getElementById('meetingDate');
+    if (meetingDateInput) {
+        meetingDateInput.addEventListener('change', generateTimeSlotsForDate);
+    }
+});

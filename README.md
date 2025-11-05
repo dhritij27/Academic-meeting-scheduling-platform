@@ -25,6 +25,7 @@ A comprehensive web-based platform designed to facilitate seamless communication
 
 - **Frontend**: HTML5, CSS3, Vanilla JavaScript
 - **Database**: MySQL
+- **Backend**: Python (Flask), MySQL connector, dotenv
 - **Icons**: Lucide Icons
 - **Design**: Responsive, Mobile-First Design
 
@@ -53,6 +54,7 @@ academic-meeting-scheduler/
 
 ### Prerequisites
 - MySQL Server (5.7 or higher)
+- Python 3.10+
 - Web Browser (Chrome, Firefox, Safari, Edge)
 - Text Editor (VS Code recommended)
 
@@ -70,30 +72,62 @@ academic-meeting-scheduler/
    mysql -u root -p
 
    # Create database
-   CREATE DATABASE meeting_scheduler;
-   USE meeting_scheduler;
+   CREATE DATABASE academic_meetings;
+   USE academic_meetings;
 
    # Import schema
    source database/schema.sql
    ```
 
-3. **Configure database connection**
-   - Update the database credentials in your backend configuration
-   - Modify `js/data.js` with your API endpoint
+3. **Backend (Flask) setup**
+   ```bash
+   # From repo root
+   python -m venv .venv && source .venv/bin/activate
+   pip install -r requirements.txt
+   cp .env.example .env
+   # Edit .env with your MySQL credentials
+   # Start backend
+   python backend/server.py
+   ```
 
-4. **Run the application**
-   - Open `src/index.html` in your browser
+4. **Configure database connection**
+   - Use `.env` variables (see `.env.example`): `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE`
+
+5. **Run the application (frontend)**
+   - Open `index.html` in your browser
    - Or use a local development server:
    ```bash
    # Using Python
    python -m http.server 8000
    
    # Using Node.js http-server
-   npx http-server src
+   npx http-server .
    ```
 
-5. **Access the application**
+6. **Access the application**
    - Open browser: `http://localhost:8000`
+
+---
+
+## Backend Endpoints (initial)
+
+- `GET /health` → health check for the Flask server
+- `GET /db/ping` → tests DB connectivity using the configured pool
+
+You can extend `backend/server.py` to add CRUD routes for meetings, availability, professors, students, and FAMs. See `database-schema.sql` for table ideas.
+
+---
+
+## Supabase Removal
+
+- Supabase scripts and data layer have been removed from `index.html` and `login.html`.
+- Files safe to delete if no longer needed:
+  - `supabase-config.js`
+  - `supabase-data.js`
+  - `migrate-to-supabase.js`
+  - `SUPABASE_SETUP.md`
+  
+Frontend currently uses `data.js` (local demo data). Replace these simulated functions by wiring API calls to your Flask endpoints as they are added.
 
 ## Usage Guide
 

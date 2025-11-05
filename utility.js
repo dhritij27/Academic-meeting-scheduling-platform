@@ -265,18 +265,6 @@ function confirmAction(message) {
     return confirm(message);
 }
 
-/**
- * Format rating as stars
- * @param {number} rating
- * @returns {string}
- */
-function formatRating(rating) {
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
-    let stars = '⭐'.repeat(fullStars);
-    if (hasHalfStar) stars += '⭐';
-    return stars;
-}
 
 /**
  * Calculate time difference in minutes
@@ -336,7 +324,6 @@ if (typeof module !== 'undefined' && module.exports) {
         debounce,
         showNotification,
         confirmAction,
-        formatRating,
         getTimeDifferenceMinutes,
         isTimeSlotAvailable
     };
