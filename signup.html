@@ -17,70 +17,43 @@
                 </h1>
                 <p>Create your account</p>
             </div>
-
             <div class="login-form">
                 <form id="signupForm">
                     <div class="form-group">
-                        <label for="srn">Student Registration Number (SRN)</label>
-                        <input type="text" id="srn" required placeholder="Enter your SRN (e.g., SRN2024001)" pattern="[A-Z]{3}[0-9]{7}" title="Format: SRN followed by 7 digits">
-                        <small class="form-hint">Format: SRN followed by 7 digits (e.g., SRN2024001)</small>
+                        <label for="email">Email</label>
+                        <input type="email" id="email" required placeholder="Enter your email">
                     </div>
-
                     <div class="form-group">
-                        <label for="name">Full Name</label>
-                        <input type="text" id="name" required placeholder="Enter your full name">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="department">Department</label>
-                        <select id="department" required>
-                            <option value="">Select Department</option>
-                            <option value="Computer Science">Computer Science</option>
-                            <option value="Electronics">Electronics</option>
-                            <option value="Mathematics">Mathematics</option>
-                            <option value="Mechanical">Mechanical</option>
-                            <option value="Civil">Civil</option>
+                        <label for="role">Role</label>
+                        <select id="role" required>
+                            <option value="">Select Role</option>
+                            <option value="student">Student</option>
+                            <option value="professor">Professor</option>
+                            <option value="mentor">Mentor (FAM)</option>
                         </select>
                     </div>
-
-                    <div class="form-group">
-                        <label for="year">Year</label>
-                        <select id="year" required>
-                            <option value="">Select Year</option>
-                            <option value="1">First Year</option>
-                            <option value="2">Second Year</option>
-                            <option value="3">Third Year</option>
-                            <option value="4">Fourth Year</option>
-                        </select>
-                    </div>
-
                     <div class="form-group">
                         <label for="password">Password</label>
                         <input type="password" id="password" required placeholder="Create a password" minlength="6">
                         <small class="form-hint">Password must be at least 6 characters long</small>
                     </div>
-
                     <div class="form-group">
                         <label for="confirmPassword">Confirm Password</label>
                         <input type="password" id="confirmPassword" required placeholder="Re-enter your password">
                         <small id="passwordMatch" class="error-message" style="display: none;">Passwords do not match</small>
                     </div>
-
                     <button type="submit" class="btn btn-primary login-btn">
-                        <i data-lucide="user-plus"></i>
-                        Sign Up
+                        <i data-lucide="user-plus"></i> Sign Up
                     </button>
                 </form>
-
                 <div class="login-footer">
                     <p>Already have an account? <a href="login.html">Sign in here</a></p>
                 </div>
             </div>
         </div>
     </div>
-
     <script src="utility.js"></script>
-    <script src="data.js"></script>
     <script src="signup.js"></script>
 </body>
 </html>
+

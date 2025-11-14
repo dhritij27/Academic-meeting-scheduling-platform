@@ -6,7 +6,6 @@
     <title>Login - Academic Meeting Scheduler</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    
 </head>
 <body>
     <div class="login-container">
@@ -16,86 +15,38 @@
                     <i data-lucide="calendar"></i>
                     Academic Meeting Scheduler
                 </h1>
-                <p>Sign in to access your dashboard</p>
+                <p>Sign in to your account</p>
             </div>
-
             <div class="login-form">
-                <div class="role-selector">
-                    <div class="role-option" data-role="student" onclick="selectRole('student')">
-                        <div class="role-icon">
-                            <i data-lucide="graduation-cap"></i>
-                        </div>
-                        <div class="role-info">
-                            <h3>Student</h3>
-                            <p>Book meetings with professors and FAM mentors</p>
-                        </div>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" required placeholder="Enter your email">
                     </div>
-
-                    <div class="role-option" data-role="professor" onclick="selectRole('professor')">
-                        <div class="role-icon">
-                            <i data-lucide="user-check"></i>
-                        </div>
-                        <div class="role-info">
-                            <h3>Professor</h3>
-                            <p>Manage office hours and student appointments</p>
-                        </div>
+                    <div class="form-group">
+                        <label for="role">Role</label>
+                        <select id="role" required>
+                            <option value="">Select Role</option>
+                            <option value="student">Student</option>
+                            <option value="professor">Professor</option>
+                            <option value="mentor">Mentor (FAM)</option>
+                        </select>
                     </div>
-
-                    <div class="role-option" data-role="fam" onclick="selectRole('fam')">
-                        <div class="role-icon">
-                            <i data-lucide="users"></i>
-                        </div>
-                        <div class="role-info">
-                            <h3>FAM Mentor</h3>
-                            <p>Help first-year students with academic guidance</p>
-                        </div>
-                    </div>
-                </div>
-
-                <form id="loginForm" style="display: none;">
-                    <div class="form-group" id="studentLoginGroup">
-                        <label for="srnOrUsername" id="loginLabel">SRN / Username</label>
-                        <input type="text" id="srnOrUsername" required placeholder="Enter your SRN or username">
-                    </div>
-
                     <div class="form-group">
                         <label for="password">Password</label>
                         <input type="password" id="password" required placeholder="Enter your password">
                     </div>
-
                     <button type="submit" class="btn btn-primary login-btn">
-                        <i data-lucide="log-in"></i>
-                        Sign In
+                        <i data-lucide="log-in"></i> Sign In
                     </button>
                 </form>
-
-                <div class="login-footer" style="display: none;">
+                <div class="login-footer">
                     <p>Don't have an account? <a href="signup.html">Sign up here</a></p>
                 </div>
-
-                <div class="demo-credentials" style="display: none;">
-                    <h4>Demo Credentials</h4>
-                    <div class="credential-item">
-                        <strong>Students:</strong> Use your SRN or username | Password: Your password
-                    </div>
-                    <div class="credential-item">
-                        <strong>Professors:</strong> prof1, prof2, prof3 | Password: professor123
-                    </div>
-                    <div class="credential-item">
-                        <strong>FAMs:</strong> fam1, fam2, fam3 | Password: mentor123
-                    </div>
-                </div>
-
-                <button type="button" class="btn btn-secondary back-btn" onclick="goBack()" style="display: none;">
-                    <i data-lucide="arrow-left"></i>
-                    Back to Role Selection
-                </button>
             </div>
         </div>
     </div>
-
     <script src="utility.js"></script>
-    <script src="data.js"></script>
     <script src="login.js"></script>
 </body>
 </html>

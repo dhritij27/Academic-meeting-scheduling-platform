@@ -22,6 +22,19 @@ function loadUserFromStorage() {
     const userData = localStorage.getItem('currentUser');
     if (userData) {
         const user = JSON.parse(userData);
+        // Ensure we always have a displayable name
+        if (!user.name) {
+            // Derive a readable name from email if possible
+            if (user.email) {
+                const local = user.email.split('@')[0] || user.email;
+                const pretty = local.replace(/[._-]+/g, ' ').trim();
+                user.name = pretty ? capitalizeWords(pretty) : user.email;
+            } else {
+                user.name = 'User';
+            }
+        }
+        // Normalize role strings (mentor → fam)
+        if (user.role === 'mentor') user.role = 'fam';
         // Update the global data object with the logged-in user
         data.currentUser = user;
     }
@@ -354,14 +367,16 @@ function saveNotes(meetingId) {
 /**
  * Switch between tabs
  */
-function switchTab(tabName) {
+function switchTab(tabName, buttonElement) {
     currentTab = tabName;
     
     // Update tab buttons
     document.querySelectorAll('.tab').forEach(tab => {
         tab.classList.remove('active');
     });
-    event.target.classList.add('active');
+    if (buttonElement) {
+        buttonElement.classList.add('active');
+    }
     
     // Hide all tab contents
     document.querySelectorAll('.tab-content').forEach(content => {
@@ -371,52 +386,54 @@ function switchTab(tabName) {
     // Show selected tab
     if (tabName === 'upcoming') {
         document.getElementById('upcomingTab').style.display = 'block';
+        renderMeetings();
     } else if (tabName === 'book') {
         document.getElementById('bookTab').style.display = 'block';
+        generateTimeSlotsForDate();
     } else if (tabName === 'fams') {
         document.getElementById('famsTab').style.display = 'block';
+        renderFAMs();
     } else if (tabName === 'notes') {
         document.getElementById('notesTab').style.display = 'block';
         renderMeetingNotes();
     }
 }
 
-/**
- * Switch user role
- */
-function switchRole(role) {
-    updateUserRole(role);
-    
-    // Update role buttons
-    document.querySelectorAll('.role-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    event.target.classList.add('active');
-    
-    // Update user badge
-    updateRoleDisplay();
-    
-    // Show/hide FAM tab based on role
-    const famsTabBtn = document.getElementById('famsTabBtn');
-    if (role === 'student') {
-        famsTabBtn.style.display = 'block';
-    } else {
-        famsTabBtn.style.display = 'none';
-    }
-    
-    // Refresh content based on new role
-    renderMeetings();
-    renderAvailability();
-    renderFAMs();
-}
+// Removed switchRole function - users are logged in with a specific role
 
 /**
  * Update role display in header
  */
 function updateRoleDisplay() {
-    const user = getCurrentUser();
     const badge = document.getElementById('userBadge');
-    badge.textContent = `${user.name} (${capitalizeWords(user.role)})`;
+    if (!badge) return;
+    
+    // Get user data from localStorage
+    const storedUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+    
+    // Find the registered user to get email
+    let userEmail = storedUser.email;
+    if (!userEmail && storedUser.role) {
+        const regUser = registeredUsers.find(u => u.role === storedUser.role);
+        if (regUser) userEmail = regUser.email;
+    }
+    
+    // Get display name
+    let displayName = storedUser.name || userEmail || 'User';
+    if (displayName.includes('@')) {
+        const localPart = displayName.split('@')[0];
+        displayName = localPart.replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+    
+    // Get role
+    const role = storedUser.role || 'user';
+    const roleDisplay = role === 'fam' || role === 'mentor' ? 'FAM Mentor' : 
+                       role === 'professor' ? 'Professor' : 
+                       role === 'student' ? 'Student' : 
+                       capitalizeWords(role);
+    
+    badge.textContent = `${displayName} (${roleDisplay})`;
 }
 
 /**
@@ -548,6 +565,19 @@ function handleMeetingFormSubmit(event) {
         link: 'https://meet.google.com/meet-' + Math.random().toString(36).substring(7)
     };
     
+    // Basic validation
+    if (!meetingData.category) {
+        showNotification('Please choose a meeting type', 'error');
+        return;
+    }
+    if (!document.getElementById('meetingWith').value) {
+        showNotification('Please choose who you are meeting', 'error');
+        return;
+    }
+    if (!meetingData.date) {
+        showNotification('Please choose a date', 'error');
+        return;
+    }
     if (!selectedTimeSlot) {
         showNotification('Please select a time slot', 'error');
         return;
@@ -612,6 +642,7 @@ function populateMeetingWithOptions() {
             option.textContent = fam.name;
             meetingWithSelect.appendChild(option);
         });
+    }
     
     // Generate time slots for the selected date
     generateTimeSlotsForDate();

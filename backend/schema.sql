@@ -62,9 +62,32 @@ CREATE TABLE IF NOT EXISTS meetings (
     FOREIGN KEY (room_id) REFERENCES meeting_rooms(room_id) ON DELETE SET NULL,
     FOREIGN KEY (slot_id) REFERENCES time_slots(slot_id) ON DELETE RESTRICT,
     FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE CASCADE,
-    UNIQUE KEY unique_room_slot (room_id, slot_id, meeting_date),
-    CONSTRAINT chk_meeting_date CHECK (meeting_date >= CURDATE())
+    UNIQUE KEY unique_room_slot (room_id, slot_id, meeting_date)
 );
+
+-- Trigger to validate meeting date
+DELIMITER //
+CREATE TRIGGER before_meeting_insert_update
+BEFORE INSERT ON meetings
+FOR EACH ROW
+BEGIN
+    IF NEW.meeting_date < CURDATE() THEN
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'Meeting date cannot be in the past';
+    END IF;
+END//
+
+CREATE TRIGGER before_meeting_update
+BEFORE UPDATE ON meetings
+FOR EACH ROW
+BEGIN
+    IF NEW.meeting_date < CURDATE() THEN
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'Meeting date cannot be in the past';
+    END IF;
+END//
+
+DELIMITER ;
 
 -- Meeting participants
 CREATE TABLE IF NOT EXISTS meeting_participants (
@@ -224,6 +247,169 @@ BEGIN
     
     RETURN is_booked = 0;
 END //
+
+-- Create FAMs table
+CREATE TABLE IF NOT EXISTS fams (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    name VARCHAR(255) NOT NULL,
+    srn VARCHAR(50) UNIQUE NOT NULL,
+    department VARCHAR(100) NOT NULL,
+    year INT NOT NULL,
+    specialization TEXT,
+    bio TEXT,
+    rating DECIMAL(3,2) DEFAULT 0.00,
+    mentees INT DEFAULT 0,
+    max_mentees INT DEFAULT 10,
+    is_available BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Create students table if it doesn't exist
+CREATE TABLE IF NOT EXISTS students (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    name VARCHAR(255) NOT NULL,
+    srn VARCHAR(50) UNIQUE NOT NULL,
+    department VARCHAR(100) NOT NULL,
+    year INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Create fam_mentees relationship table
+CREATE TABLE IF NOT EXISTS fam_mentees (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    fam_id INT NOT NULL,
+    student_id INT NOT NULL,
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(fam_id, student_id),
+    FOREIGN KEY (fam_id) REFERENCES fams(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+);
+
+-- Create subjects table
+CREATE TABLE IF NOT EXISTS subjects (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    subject_code VARCHAR(20) UNIQUE NOT NULL,
+    subject_name VARCHAR(100) NOT NULL,
+    department VARCHAR(100) NOT NULL,
+    credits INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Insert sample subjects
+INSERT INTO subjects (subject_code, subject_name, department, credits) VALUES
+    ('CS101', 'Introduction to Programming', 'Computer Science', 4),
+    ('CS201', 'Data Structures', 'Computer Science', 4),
+    ('CS301', 'Algorithms', 'Computer Science', 4),
+    ('CS401', 'Database Systems', 'Computer Science', 3),
+    ('CS501', 'Machine Learning', 'Computer Science', 4),
+    ('IT101', 'Introduction to IT', 'Information Technology', 3),
+    ('IT201', 'Networking Fundamentals', 'Information Technology', 4),
+    ('IT301', 'Cybersecurity Basics', 'Information Technology', 4),
+    ('MATH101', 'Calculus I', 'Mathematics', 4),
+    ('MATH201', 'Linear Algebra', 'Mathematics', 3)
+ON DUPLICATE KEY UPDATE
+    subject_name = VALUES(subject_name),
+    department = VALUES(department),
+    credits = VALUES(credits),
+    updated_at = CURRENT_TIMESTAMP;
+
+-- Create student_grades table
+CREATE TABLE IF NOT EXISTS student_grades (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    subject_id INT,
+    fam_id INT NOT NULL,
+    grade VARCHAR(2) NOT NULL,
+    semester VARCHAR(20) NOT NULL,
+    academic_year VARCHAR(10) NOT NULL,
+    feedback TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+    FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE SET NULL,
+    FOREIGN KEY (fam_id) REFERENCES fams(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_grade_entry (student_id, subject_id, semester, academic_year)
+);
+
+-- Insert sample FAMs
+INSERT INTO fams (user_id, name, srn, department, year, specialization, bio, rating, max_mentees) VALUES
+    (NULL, 'John Doe', 'FAM001', 'Computer Science', 3, 'Algorithms, Web Development', 'Senior CS student with experience in competitive programming', 4.8, 8),
+    (NULL, 'Jane Smith', 'FAM002', 'Computer Science', 4, 'Machine Learning, Python', 'ML enthusiast with internship experience at top tech companies', 4.9, 10),
+    (NULL, 'Alex Johnson', 'FAM003', 'Information Technology', 3, 'Cybersecurity, Networking', 'Cyber security researcher and CTF player', 4.7, 6)
+ON DUPLICATE KEY UPDATE
+    name = VALUES(name),
+    department = VALUES(department),
+    year = VALUES(year),
+    specialization = VALUES(specialization),
+    bio = VALUES(bio),
+    rating = VALUES(rating),
+    max_mentees = VALUES(max_mentees),
+    updated_at = CURRENT_TIMESTAMP;
+
+-- Insert sample students
+INSERT INTO students (user_id, name, srn, department, year) VALUES
+    (NULL, 'Michael Brown', 'SRN2023001', 'Computer Science', 1),
+    (NULL, 'Sarah Wilson', 'SRN2023002', 'Computer Science', 1),
+    (NULL, 'David Lee', 'SRN2023003', 'Information Technology', 1),
+    (NULL, 'Emma Garcia', 'SRN2023004', 'Computer Science', 1),
+    (NULL, 'James Miller', 'SRN2023005', 'Information Technology', 1)
+ON DUPLICATE KEY UPDATE
+    name = VALUES(name),
+    department = VALUES(department),
+    year = VALUES(year),
+    updated_at = CURRENT_TIMESTAMP;
+
+-- Assign students to FAMs
+INSERT INTO fam_mentees (fam_id, student_id) VALUES
+    ((SELECT id FROM fams WHERE srn = 'FAM001' LIMIT 1), (SELECT id FROM students WHERE srn = 'SRN2023001' LIMIT 1)),
+    ((SELECT id FROM fams WHERE srn = 'FAM001' LIMIT 1), (SELECT id FROM students WHERE srn = 'SRN2023002' LIMIT 1)),
+    ((SELECT id FROM fams WHERE srn = 'FAM002' LIMIT 1), (SELECT id FROM students WHERE srn = 'SRN2023003' LIMIT 1)),
+    ((SELECT id FROM fams WHERE srn = 'FAM002' LIMIT 1), (SELECT id FROM students WHERE srn = 'SRN2023004' LIMIT 1)),
+    ((SELECT id FROM fams WHERE srn = 'FAM003' LIMIT 1), (SELECT id FROM students WHERE srn = 'SRN2023005' LIMIT 1))
+ON DUPLICATE KEY UPDATE
+    assigned_at = CURRENT_TIMESTAMP;
+
+-- Update mentee counts
+UPDATE fams f
+SET mentees = (
+    SELECT COUNT(*) 
+    FROM fam_mentees fm 
+    WHERE fm.fam_id = f.id
+);
+
+-- Insert sample grades
+INSERT INTO student_grades (student_id, subject_id, fam_id, grade, semester, academic_year, feedback)
+SELECT 
+    s.id,
+    sub.id,
+    fm.fam_id,
+    ELT(FLOOR(1 + RAND() * 5), 'A', 'B+', 'B', 'C+', 'C'),
+    'Fall',
+    '2024-2025',
+    CONCAT('Good progress in ', sub.subject_name, '. ', 
+           CASE 
+               WHEN RAND() > 0.7 THEN 'Excellent work!'
+               WHEN RAND() > 0.4 THEN 'Good performance.'
+               ELSE 'Needs improvement in some areas.'
+           END)
+FROM 
+    students s
+CROSS JOIN 
+    (SELECT id, subject_name FROM subjects ORDER BY RAND() LIMIT 3) sub
+JOIN 
+    fam_mentees fm ON s.id = fm.student_id
+ON DUPLICATE KEY UPDATE 
+    grade = VALUES(grade),
+    feedback = VALUES(feedback),
+    updated_at = CURRENT_TIMESTAMP;
+
 DELIMITER ;
 
 -- Create a view for daily schedules

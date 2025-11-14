@@ -6,7 +6,6 @@
     <title>Academic Meeting Scheduler</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    
 </head>
 <body>
     <div class="container">
@@ -17,7 +16,7 @@
                 Academic Meeting Scheduler
             </h1>
             <div class="user-info">
-                <div class="user-badge" id="userBadge">Meera Iyer (Student)</div>
+                <div class="user-badge" id="userBadge">Loading...</div>
                 <button class="btn btn-secondary logout-btn" onclick="logout()">
                     <i data-lucide="log-out"></i>
                     Logout
@@ -58,10 +57,10 @@
                 <!-- Tabs -->
                 <div class="card">
                     <div class="tabs">
-                        <button class="tab active" onclick="switchTab('upcoming')">Upcoming Meetings</button>
-                        <button class="tab" onclick="switchTab('book')" id="bookTabBtn">Book Meeting</button>
-                        <button class="tab" onclick="switchTab('fams')" id="famsTabBtn">FAMs</button>
-                        <button class="tab" onclick="switchTab('notes')" id="notesTabBtn" style="display: none;">Meeting Notes</button>
+                        <button class="tab active" onclick="switchTab('upcoming', this)">Upcoming Meetings</button>
+                        <button class="tab" onclick="switchTab('book', this)" id="bookTabBtn">Book Meeting</button>
+                        <button class="tab" onclick="switchTab('fams', this)" id="famsTabBtn">FAMs</button>
+                        <button class="tab" onclick="switchTab('notes', this)" id="notesTabBtn" style="display: none;">Meeting Notes</button>
                     </div>
 
                     <!-- Upcoming Meetings Tab -->
